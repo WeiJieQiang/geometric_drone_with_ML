@@ -58,23 +58,9 @@ class Drone(object):
         #print "current time:", self.t_current
         t_eval = np.linspace(0, dt, 2)
         ret = solve_ivp(self.drone_dyna, [self.t_prev,self.t_current], self.state, method='RK45')#, t_eval=t_eval)
-        #print "the time points:",ret.t
-        #print "the time points are ", ret.t
-        #print ret.y.shape
-        #print ret
-        # self.t_prev = self.t_current - ret.t[-1]
-        # _,_,self.Omega_d_prev = self.controller(self.t_current-dt,self.state)
-        self.parse_new_states(ret.y[:,-1].flatten())
-        # #print "prev time:", self.t_prev
-        # _,_,self.Omega_d_current = self.controller(self.t_current,self.state)
-        # if self.t_current-self.t_prev > 0.00001:
-        #     self.Omega_d_d = (self.Omega_d_current-self.Omega_d_prev)/(self.t_current-self.t_prev)
-        # else:
-        #     print "time is too short!"
 
-        #print "the stats omega_d_prev,current:", self.Omega_d_prev,self.Omega_d_current
-        #print "the time diff:", self.t_current-self.t_prev
-        #print type(ret.y.flatten())
+        self.parse_new_states(ret.y[:,-1].flatten())
+
 
 
 
@@ -131,11 +117,7 @@ class Drone(object):
         b_2d = b_2d_temp / LA.norm(b_2d_temp)
 
         R_d = reduce(np.append, [np.cross(b_2d, b_3d), b_2d, b_3d]).reshape(3, 3,
-                                                                            order='F')  ### Q1: this one should be F, but why the others??? Or it just needs to be consistent
-        # print "cross", np.cross(b_2d, b_3d)
-        # print "b_2d", b_2d
-        # print "b_3d", b_3d
-        # print "R_d", R_d
+                                                                            order='F')
         # calculate \dot{R}_d: R_ddot
         b_3d_temp_dot = -k_x * e_v - k_v * (
                 self.gravity * e_3 - f * np.dot(R, e_3) / self.mass - x_ddotdot) + self.mass * x_ddotdotdot
@@ -149,33 +131,21 @@ class Drone(object):
 
         # calculate Omega_d
         Omega_d_hat = np.dot(R_d.transpose(), R_ddot)
-        # print "the Omega_d_hat:", Omega_d_hat
         Omega_d = mf.matrix_hat_inv(Omega_d_hat)
 
 
         # calculate e_R
         e_R = 0.5 * mf.matrix_hat_inv( np.dot(R_d.transpose(), R) - np.dot(R.transpose(), R_d) )
 
-        #print "e_R", e_R
 
-        # calculate e_Omega
         e_Omega = Omega - reduce(np.dot, [R.transpose(), R_d, Omega_d])
 
-        # calculate Omega_ddot
 
-        #print "controller times:",t
-
-
+        # calculate Omega_ddot, use numerical not analytic method
         Omega_ddot = (Omega_d-self.Omega_d_prev)/dt
 
         self.Omega_d_prev = Omega_d
 
-        #Omega_ddot = self.Omega_d_d # outside the callback function.
-        #print Omega_ddot
-        # if t > 0.0:
-        #     Omega_ddot = (Omega_d - self.Omega_d_prev)/t # inside the callback
-        # else:
-        #     Omega_ddot = np.array([0.,0.,0.])
 
         # control input
         tau = -k_R*e_R - k_Omega * e_Omega + reduce(np.dot,[Omega_hat,self.inertia,Omega])\
