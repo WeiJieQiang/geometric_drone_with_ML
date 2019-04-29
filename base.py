@@ -189,10 +189,6 @@ class Drone(object):
 
 
 import numpy as np
-#from scipy.integrate import solve_ivp as ode
-import matplotlib.pyplot as plt
-
-
 
 t_start = 0
 t_stop = 4
@@ -231,19 +227,40 @@ for t_iter in t_list:
     pos_d0 = np.append(pos_d0, np.array([0.4 * t_iter, 0.4 * np.sin(np.pi * t_iter), 0.6 * np.cos(np.pi * t_iter)])[0])
     pos_d1 = np.append(pos_d1, np.array([0.4 * t_iter, 0.4 * np.sin(np.pi * t_iter), 0.6 * np.cos(np.pi * t_iter)])[1])
     pos_d2 = np.append(pos_d2, np.array([0.4 * t_iter, 0.4 * np.sin(np.pi * t_iter), 0.6 * np.cos(np.pi * t_iter)])[2])
-    w_d0 = np.append(w_d0,drone.Omega_d_current[0])
-    w_d1 = np.append(w_d1, drone.Omega_d_current[1])
-    w_d2 = np.append(w_d2, drone.Omega_d_current[2])
+    w_d0 = np.append(w_d0, drone.Omega_d_prev[0])
+    w_d1 = np.append(w_d1, drone.Omega_d_prev[1])
+    w_d2 = np.append(w_d2, drone.Omega_d_prev[2])
 
 print "dimensions: ",t_list.shape,pos_x.shape,pos_d0.shape, w_d0.shape
-import matplotlib.pyplot as plt
 
-plt.plot(t_list,pos_x, 'r')
-plt.plot(t_list,pos_y, 'g')
-plt.plot(t_list,pos_z, 'b')
-plt.plot(t_list,pos_d0, 'k')
-plt.plot(t_list,pos_d1, 'm')
-plt.plot(t_list,pos_d2, 'y')
+
+# the plots zone
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+# 3D plots
+mpl.rcParams['legend.fontsize'] = 11
+fig = plt.figure()
+ax1 = fig.add_subplot(121, projection='3d')
+ax1.plot(pos_d0,pos_d1,pos_d2,label='desired trajectory')
+ax1.plot(pos_x,pos_y,pos_z,label='drone position')
+ax1.legend()
+
+ax2 = fig.add_subplot(122, projection='3d')
+ax2.plot(w_d0,w_d1,w_d2,label='desired angular velocity')
+ax2.plot(w_x,w_y,w_z,label='drone angular velocity')
+ax2.legend()
+
+# 2D plots: components wise with more details
+
+# plt.plot(t_list,pos_x, 'r')
+# plt.plot(t_list,pos_y, 'g')
+# plt.plot(t_list,pos_z, 'b')
+# plt.plot(t_list,pos_d0, 'k')
+# plt.plot(t_list,pos_d1, 'm')
+# plt.plot(t_list,pos_d2, 'y')
 # plt.plot(t_list,w_d0, 'r')
 # plt.plot(t_list,w_d1,'g')
 # plt.plot(t_list,w_d2, 'b')
