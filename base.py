@@ -63,6 +63,20 @@ class Drone(object):
 
 
 
+    def differential_x_d(self,t):
+        # calculations based on x_d which is the desired trajectory
+
+        x_d = np.array([0.4 * t, 0.4 * np.sin(np.pi * t), 0.6 * np.cos(np.pi * t)])
+        v_d = np.array([0.4, 0.4 * np.pi * np.cos(np.pi * t), -0.6 * np.pi * np.sin(np.pi * t)])
+        x_ddotdot = np.array([0, -0.4 * np.pi ** 2 * np.sin(np.pi * t), -0.6 * np.pi ** 2 * np.cos(np.pi * t)])
+        x_ddotdotdot = np.array([0, -0.4 * np.pi ** 3 * np.cos(np.pi * t), 0.6 * np.pi ** 3 * np.sin(np.pi * t)])
+        return x_d,v_d,x_ddotdot,x_ddotdotdot
+
+    def differential_b_1d(self,t):
+        # the desired direction b_1d
+        b_1d = np.array([np.cos(np.pi * t), np.sin(np.pi * t), 0])
+        b_1ddot = np.array([-np.pi * np.sin(np.pi * t), np.pi * np.cos(np.pi * t), 0])
+        return b_1d,b_1ddot
 
 
     def controller(self, t, y):
@@ -86,15 +100,11 @@ class Drone(object):
         k_R = 8.81
         k_Omega = 2.54
 
-        # the desired trajectory x_d and desired direction b_1d
-        x_d = np.array([0.4 * t, 0.4 * np.sin(np.pi * t), 0.6 * np.cos(np.pi * t)])
-        b_1d = np.array([np.cos(np.pi * t), np.sin(np.pi * t), 0])
-        b_1ddot = np.array([-np.pi * np.sin(np.pi * t), np.pi * np.cos(np.pi * t), 0])
+        # calculation based on the desired direction b_1d
+        b_1d,b_1ddot = self.differential_b_1d(t)
 
-        # calculations based on x_d
-        v_d = np.array([0.4, 0.4 * np.pi * np.cos(np.pi * t), -0.6 * np.pi * np.sin(np.pi * t)])
-        x_ddotdot = np.array([0, -0.4 * np.pi ** 2 * np.sin(np.pi * t), -0.6 * np.pi ** 2 * np.cos(np.pi * t)])
-        x_ddotdotdot = np.array([0, -0.4 * np.pi ** 3 * np.cos(np.pi * t), 0.6 * np.pi ** 3 * np.sin(np.pi * t)])
+        # calculation based on the desired trajectory x_d
+        x_d,v_d,x_ddotdot,x_ddotdotdot = self.differential_x_d(t)
 
         # the errors: e_x e_v
         e_x = p - x_d
@@ -104,10 +114,6 @@ class Drone(object):
         global e_3
         e_3 = np.array([0., 0., 1.])
         b_3d_temp = -k_x * e_x - k_v * e_v - self.mass * self.gravity * e_3 + self.mass * x_ddotdot
-        if LA.norm(b_3d_temp)> 0.0001:
-            b_3d = - b_3d_temp / LA.norm(b_3d_temp)
-        else:
-            print "The norm:", LA.norm(b_3d_temp)
 
         # control input f
         f = - np.dot(b_3d_temp, np.dot(R, e_3))
@@ -162,9 +168,8 @@ class Drone(object):
         v = y[3:6]
         R = y[6:15].reshape(3, 3, order='F')
 
-        #print "R:",R
+
         e_3 = np.array([0., 0., 1.])
-        #print "np.dot(R, e_3):",np.dot(R, e_3)
         Omega = y[15:18]
 
 
@@ -177,7 +182,6 @@ class Drone(object):
         state_dot = np.zeros(18)
         # velocity
         state_dot[0:3] = v
-        #print "sudu:", v
         # acceleration
         state_dot[3:6] = np.array([0., 0., self.gravity] - f*np.dot(R, e_3)/self.mass)
         #print "the acce:",np.array([0., 0., self.gravity] - f*np.dot(R, e_3)/self.mass)
@@ -191,16 +195,15 @@ class Drone(object):
 import numpy as np
 
 t_start = 0
-t_stop = 4
+t_stop = 10
 dt = 0.05
 el = int((t_stop-t_start)/dt)
 t_list = np.linspace(t_start, t_stop, el)
 
 
-#the dimension of interest
-d=0
-
 drone = Drone(m=4.34)
+
+
 pos_x = np.array([])
 pos_y = np.array([])
 pos_z = np.array([])
@@ -240,31 +243,51 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-# 3D plots
-mpl.rcParams['legend.fontsize'] = 11
-fig = plt.figure()
-ax1 = fig.add_subplot(121, projection='3d')
-ax1.plot(pos_d0,pos_d1,pos_d2,label='desired trajectory')
-ax1.plot(pos_x,pos_y,pos_z,label='drone position')
-ax1.legend()
+plot_method  = raw_input("Which kind of plot do you want to see, 2D or 3D?")
 
-ax2 = fig.add_subplot(122, projection='3d')
-ax2.plot(w_d0,w_d1,w_d2,label='desired angular velocity')
-ax2.plot(w_x,w_y,w_z,label='drone angular velocity')
-ax2.legend()
+if plot_method == '3D':
+    mpl.rcParams['legend.fontsize'] = 11
+    fig = plt.figure()
+    ax1 = fig.add_subplot(121, projection='3d')
+    ax1.plot(pos_d0,pos_d1,pos_d2,label='desired trajectory')
+    ax1.plot(pos_x,pos_y,pos_z,label='drone position')
+    ax1.legend()
 
-# 2D plots: components wise with more details
+    ax2 = fig.add_subplot(122, projection='3d')
+    ax2.plot(w_d0,w_d1,w_d2,label='desired angular velocity')
+    ax2.plot(w_x,w_y,w_z,label='drone angular velocity')
+    ax2.legend()
+elif plot_method == '2D':
+    ax1 = plt.subplot(2, 3, 1)
+    ax1.plot(t_list, pos_x, label='pos_x')
+    ax1.plot(t_list, pos_d0, label='pos_d0')
+    ax1.legend()
 
-# plt.plot(t_list,pos_x, 'r')
-# plt.plot(t_list,pos_y, 'g')
-# plt.plot(t_list,pos_z, 'b')
-# plt.plot(t_list,pos_d0, 'k')
-# plt.plot(t_list,pos_d1, 'm')
-# plt.plot(t_list,pos_d2, 'y')
-# plt.plot(t_list,w_d0, 'r')
-# plt.plot(t_list,w_d1,'g')
-# plt.plot(t_list,w_d2, 'b')
-# plt.plot(t_list,w_x, 'k')
-# plt.plot(t_list,w_y, 'm')
-# plt.plot(t_list,w_z, 'y')
+    ax2 = plt.subplot(2, 3, 2)
+    ax2.plot(t_list, pos_y, label='pos_y')
+    ax2.plot(t_list, pos_d1, label='pos_d1')
+    ax2.legend()
+
+    ax3 = plt.subplot(2, 3, 3)
+    ax3.plot(t_list, pos_z, label='pos_z')
+    ax3.plot(t_list, pos_d2, label='pos_d2')
+    ax3.legend()
+
+    ax4 = plt.subplot(2, 3, 4)
+    ax4.plot(t_list, w_x, label='w_x')
+    ax4.plot(t_list, w_d0, label='w_d0')
+    ax4.legend()
+
+    ax5 = plt.subplot(2, 3, 5)
+    ax5.plot(t_list, w_y, label='w_y')
+    ax5.plot(t_list, w_d1, label='w_d1')
+    ax5.legend()
+
+    ax6 = plt.subplot(2, 3, 6)
+    ax6.plot(t_list, w_z, label='w_z')
+    ax6.plot(t_list, w_d2, label='w_d2')
+    ax6.legend()
+else:
+    print "plot method has to be 3D or 2D!"
+
 plt.show()
