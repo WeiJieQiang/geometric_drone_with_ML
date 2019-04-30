@@ -6,6 +6,7 @@ Created on Wed Nov 14 15:31:14 2018
 
 This is the code based on paper "Geometric tracking control of a quadrotor UAV on SE(3)". with some machine learning extension.
 """
+
 import numpy as np
 #import quaternion
 from scipy.integrate import solve_ivp
@@ -55,7 +56,6 @@ class Drone(object):
         # the return of solve_ivp has ret.t (time points), ret.y (values of solution at time points)
         # t_eval defines at what time points the values of the solution are stored, default one is automatically chosen by the solver
         self.t_current += dt
-        #print "current time:", self.t_current
         t_eval = np.linspace(0, dt, 2)
         ret = solve_ivp(self.drone_dyna, [self.t_prev,self.t_current], self.state, method='RK45')#, t_eval=t_eval)
 
@@ -114,6 +114,7 @@ class Drone(object):
         global e_3
         e_3 = np.array([0., 0., 1.])
         b_3d_temp = -k_x * e_x - k_v * e_v - self.mass * self.gravity * e_3 + self.mass * x_ddotdot
+        b_3d = -b_3d_temp / LA.norm(b_3d_temp)
 
         # control input f
         f = - np.dot(b_3d_temp, np.dot(R, e_3))
@@ -184,7 +185,6 @@ class Drone(object):
         state_dot[0:3] = v
         # acceleration
         state_dot[3:6] = np.array([0., 0., self.gravity] - f*np.dot(R, e_3)/self.mass)
-        #print "the acce:",np.array([0., 0., self.gravity] - f*np.dot(R, e_3)/self.mass)
         state_dot[6:15] = np.dot(R, Omega_hat).reshape(9, order='F')
         state_dot[15:18] = np.dot(np.linalg.inv(self.inertia), np.dot(np.dot(-Omega_hat, self.inertia), Omega) + tau)
         return state_dot
@@ -193,6 +193,11 @@ class Drone(object):
 
 
 import numpy as np
+
+import time
+start = time.time()
+
+
 
 t_start = 0
 t_stop = 10
@@ -236,6 +241,8 @@ for t_iter in t_list:
 
 print "dimensions: ",t_list.shape,pos_x.shape,pos_d0.shape, w_d0.shape
 
+end = time.time()
+print "The running time is:",end - start
 
 # the plots zone
 
