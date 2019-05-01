@@ -6,6 +6,9 @@ Created on Wed Nov 14 15:31:14 2018
 
 This is the code based on paper "Geometric tracking control of a quadrotor UAV on SE(3)". with some machine learning extension.
 """
+"""
+
+"""
 
 import numpy as np
 #import quaternion
@@ -26,7 +29,7 @@ class Drone(object):
         #self.state = np.array[self.p, self.v.tolist(), self.r.tolist(), self.w.tolist()]
         self.state = np.array([0., 0., 0.,0., 0., 0.,1., 0., 0., 0., 1., 0., 0., 0., 1., 0., 0., 0.])
 
-        self.t_prev = 0.0
+        self.t_prev = 0.1
 
         self.Omega_d_prev = np.array([0.,0.,0.])
 
@@ -70,11 +73,7 @@ class Drone(object):
     def controller(self, t, y):
 
 
-
-        dt = t-self.t_prev
-
-        if dt < 0.00001:
-            dt = 0.01
+        dt = max(t-self.t_prev,0.01)
 
         self.t_prev = t
 
@@ -124,7 +123,7 @@ class Drone(object):
         Omega_d_hat = np.dot(R_d.transpose(), R_ddot)
         Omega_d = mf.matrix_hat_inv(Omega_d_hat)
 
-        # calculate Omega_ddot
+        # calculate Omega_ddot analytically
         #b_2ddotdot = LA.norm(b_2d_temp)**(-6) * ( LA.norm(b_2d_temp)**(3)*()  - 3*LA.norm(b_2d_temp) )
 
 
