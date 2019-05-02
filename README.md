@@ -1,4 +1,11 @@
 # geometric_drone_with_ML
- -The code base.py is the basic geometric tracking protocol for the drone. 
+[![N|Solid](https://cldup.com/dTxpPi9lDf.thumb.png)](https://nodesource.com/products/nsolid)
 
- -The code base_ML.py is the code with data collection and ML regressions for model uncertainty.
+[![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://travis-ci.org/joemccann/dillinger)
+
+Dillinger is a cloud-enabled, mobile-ready, offline-storage, AngularJS powered HTML5 Markdown editor.
+
+  - Type some Markdown on the left
+  - aa
+  - Magic
+$$\mathcal{A}$$
