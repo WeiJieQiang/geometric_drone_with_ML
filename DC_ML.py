@@ -217,13 +217,16 @@ X[18:22,:] = control_imperfect_ctrl
 
 # GPy
 # define kernel
-ker = GPy.kern.Matern52(22,ARD=True) + GPy.kern.White(22)
+ker = GPy.kern.RBF(input_dim=22, variance=1., lengthscale=1.)
 
 # create simple GP model
-m = GPy.models.GPRegression(X,Y,ker)
+m = GPy.models.GPRegression(X.transpose(),Y.transpose(),ker)
 
 # optimize and plot
 m.optimize(messages=True,max_f_eval = 1000)
-fig = m.plot()
-display(GPy.plotting.show(fig, filename='basic_gp_regression_notebook_2d'))
-display(m)
+# fig = m.plot()
+# display(GPy.plotting.show(fig, filename='basic_gp_regression_notebook_2d'))
+# display(m)
+
+
+"""feedback with regression of the uncertainty"""
