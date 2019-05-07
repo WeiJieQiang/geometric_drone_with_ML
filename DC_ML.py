@@ -210,5 +210,20 @@ print "The target dimension is %d" % Y.shape[0]
 """ML part: here we use some libraries to perform the regression task for the model uncertainty. GPy, scikit-learn, tensorflow+keras"""
 import GPy
 
-X = np.append(state_imperfect_ctrl,control_imperfect_ctrl)
-print "SSSSSS,", X.shape
+# The sample data X
+X = np.zeros(shape = (22, len(time_update)))
+X[0:18,:] = state_imperfect_ctrl
+X[18:22,:] = control_imperfect_ctrl
+
+# GPy
+# define kernel
+ker = GPy.kern.Matern52(22,ARD=True) + GPy.kern.White(22)
+
+# create simple GP model
+m = GPy.models.GPRegression(X,Y,ker)
+
+# optimize and plot
+m.optimize(messages=True,max_f_eval = 1000)
+fig = m.plot()
+display(GPy.plotting.show(fig, filename='basic_gp_regression_notebook_2d'))
+display(m)
