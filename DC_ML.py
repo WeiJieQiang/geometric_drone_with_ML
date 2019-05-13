@@ -8,6 +8,7 @@ This file perform the data collection and gaussian process regression for the ma
 
 import numpy as np
 from drone_tracking import *
+from numpy.linalg import norm as no
 
 t_start = 0
 t_stop = 20
@@ -227,6 +228,24 @@ m.optimize(messages=True,max_f_eval = 1000)
 # fig = m.plot()
 # display(GPy.plotting.show(fig, filename='basic_gp_regression_notebook_2d'))
 # display(m)
+
+# validation on GPy
+print"EEE2"
+print X.shape
+print X[:,0].shape
+dim = 200
+print m.predict(X[:,dim].reshape(1,22))[0]-Y[:,dim]
+
+temp =np.zeros(len(Y[1]))
+for i in xrange(len(Y[1])):
+    temp[i] = no(m.predict(X[:,i].reshape(1,22))[0]-Y[:,i])
+
+ti = range(400)
+plt.plot(ti,temp)
+plt.show()
+
+
+
 
 
 """feedback with regression of the uncertainty"""
