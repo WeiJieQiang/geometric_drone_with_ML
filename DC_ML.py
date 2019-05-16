@@ -216,15 +216,25 @@ X = np.zeros(shape = (22, len(time_update)))
 X[0:18,:] = state_imperfect_ctrl
 X[18:22,:] = control_imperfect_ctrl
 
-# GPy
-# define kernel
-ker = GPy.kern.RBF(input_dim=22, variance=1., lengthscale=1.)
+# GPy model training or reload
+save_model = 0
 
-# create simple GP model
-m = GPy.models.GPRegression(X.transpose(),Y.transpose(),ker)
+if save_model:
+    m = GPy.models.GPRegression(X, Y)
+    m.update_model(False)  # do not call the underlying expensive algebra on load
+    m.initialize_parameter()  # Initialize the parameters (connect the parameters up)
+    m[:] = np.load('model_save.npy')  # Load the parameters
+    m.update_model(True)  # Call the algebra only once
+else:
+    k = GPy.kern.RBF(input_dim=22, variance=1., lengthscale=1.)
+    m = GPy.models.GPRegression(X.transpose(),Y.transpose(), k)
+    m.constrain_positive('')
+    m.optimize(messages=True,max_f_eval = 1000)
+    print('test')
+    np.save('./model_save.npy', m.param_array)
+#m.plot()
 
-# optimize and plot
-m.optimize(messages=True,max_f_eval = 1000)
+
 # fig = m.plot()
 # display(GPy.plotting.show(fig, filename='basic_gp_regression_notebook_2d'))
 # display(m)
@@ -243,6 +253,9 @@ for i in xrange(len(Y[1])):
 ti = range(400)
 plt.plot(ti,temp)
 plt.show()
+
+
+
 
 
 
