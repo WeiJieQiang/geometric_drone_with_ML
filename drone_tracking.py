@@ -18,6 +18,7 @@ from scipy.integrate import solve_ivp
 from numpy.linalg import norm as no
 from functools import reduce
 import mat_fun as mf
+
 import time
 
 
@@ -193,6 +194,7 @@ class Drone(object):
         f,tau, _ = self.controller(t, y)
 
 
+
         # initialization
         state_dot = np.zeros(18)
         # velocity
@@ -201,5 +203,61 @@ class Drone(object):
         state_dot[3:6] = np.array([0., 0., self.gravity] - f*np.dot(y[6:15].reshape(3, 3, order='F'), e_3)/self.mass_sys)
         state_dot[6:15] = np.dot(y[6:15].reshape(3, 3, order='F'), Omega_hat).reshape(9, order='F')
         state_dot[15:18] = np.dot(np.linalg.inv(self.inertia), np.dot(np.dot(-Omega_hat, self.inertia), y[15:18]) + tau)
+
+        return state_dot
+
+import GPy
+
+class Drone_reg(Drone):
+
+    def __init__(self,m_true, m_controller):
+        super(Drone_reg,self).__init__(m_true, m_controller)
+        #load the model and added in the class Drone_reg as an attribute .m
+        X = np.load('X.npy')
+        Y = np.load('Y.npy')
+        self.m  = GPy.models.GPRegression(X.transpose(), Y.transpose())
+        self.m.update_model(False)  # do not call the underlying expensive algebra on load
+        self.m.initialize_parameter()  # Initialize the parameters (connect the parameters up)
+        self.m[:] = np.load('model_save.npy')  # Load the parameters
+        self.m.update_model(True)  # Call the algebra only once
+
+
+
+
+    def drone_dyna(self, t, y):
+
+        #global  p,v,R,Omega,Omega_hat
+
+        #v = y[3:6]
+        #R = y[6:15].reshape(3, 3, order='F')
+
+
+        e_3 = np.array([0., 0., 1.])
+        #Omega = y[15:18]
+
+
+        Omega_hat = mf.w_hat(y[15:18])
+
+        f,tau, _ = self.controller(t, y)
+
+        #print "HAHAHA", y.shape, type(f), tau.shape
+
+        temp_pred = reduce(np.append, [y,f,tau])
+        #print "BBBBBBB", temp_pred.shape
+
+        dyn_error = self.m.predict(temp_pred.reshape(1, 22))[0].reshape(18)
+
+        #print "CCCCCCCC", dyn_error.shape
+
+
+
+        # initialization
+        state_dot = np.zeros(18)
+        # velocity
+        state_dot[0:3] = y[3:6] + dyn_error[0:3]
+        # acceleration
+        state_dot[3:6] = np.array([0., 0., self.gravity] - f*np.dot(y[6:15].reshape(3, 3, order='F'), e_3)/self.mass_sys) +  dyn_error[3:6]
+        state_dot[6:15] = np.dot(y[6:15].reshape(3, 3, order='F'), Omega_hat).reshape(9, order='F') + dyn_error[6:15]
+        state_dot[15:18] = np.dot(np.linalg.inv(self.inertia), np.dot(np.dot(-Omega_hat, self.inertia), y[15:18]) + tau) + dyn_error[15:18]
 
         return state_dot

@@ -8,6 +8,7 @@ This file perform the data collection and gaussian process regression for the ma
 
 import numpy as np
 from drone_tracking import *
+#from drone_tracking_regression_correction import *
 from numpy.linalg import norm as no
 
 t_start = 0
@@ -15,6 +16,8 @@ t_stop = 20
 t_step = 0.05
 el = int((t_stop-t_start)/t_step)
 t_list = np.linspace(t_start, t_stop, el)
+
+
 
 
 drone_c = Drone(m_true=4.34,m_controller=3)
@@ -216,11 +219,15 @@ X = np.zeros(shape = (22, len(time_update)))
 X[0:18,:] = state_imperfect_ctrl
 X[18:22,:] = control_imperfect_ctrl
 
+np.save('./X.npy', X)
+np.save('./Y.npy', Y)
+
 # GPy model training or reload
 save_model = 0
 
+
 if save_model:
-    m = GPy.models.GPRegression(X, Y)
+    m = GPy.models.GPRegression(X.transpose(),Y.transpose())
     m.update_model(False)  # do not call the underlying expensive algebra on load
     m.initialize_parameter()  # Initialize the parameters (connect the parameters up)
     m[:] = np.load('model_save.npy')  # Load the parameters
@@ -232,7 +239,6 @@ else:
     m.optimize(messages=True,max_f_eval = 1000)
     print('test')
     np.save('./model_save.npy', m.param_array)
-#m.plot()
 
 
 # fig = m.plot()
@@ -254,11 +260,149 @@ ti = range(400)
 plt.plot(ti,temp)
 plt.show()
 
+# rerun the drone with regression corrections
+
+t_start = 0
+t_stop = 20
+t_step = 0.05
+el = int((t_stop-t_start)/t_step)
+t_list = np.linspace(t_start, t_stop, el)
 
 
 
 
+drone_reg = Drone_reg(m_true=4.34,m_controller=3)
+
+# plot the corrected trajectory using regression model
+#position
+pos_x_reg = np.array([])
+pos_y_reg = np.array([])
+pos_z_reg = np.array([])
+
+# velocity
+v_1_reg = np.array([])
+v_2_reg = np.array([])
+v_3_reg = np.array([])
+
+# attitude
+R_1_reg = np.array([])
+R_2_reg = np.array([])
+R_3_reg = np.array([])
+R_4_reg = np.array([])
+R_5_reg = np.array([])
+R_6_reg = np.array([])
+R_7_reg = np.array([])
+R_8_reg = np.array([])
+R_9_reg = np.array([])
+
+# angular velocity
+w_x_reg = np.array([])
+w_y_reg = np.array([])
+w_z_reg = np.array([])
 
 
 
-"""feedback with regression of the uncertainty"""
+pos_d0_reg = np.array([])
+pos_d1_reg = np.array([])
+pos_d2_reg = np.array([])
+
+w_d0_reg = np.array([])
+w_d1_reg = np.array([])
+w_d2_reg = np.array([])
+
+start = time.time()
+
+time_update_reg, state_update_reg = drone_reg.update(t_start,t_stop,t_step) # without specific sampling time points
+
+end = time.time()
+print "The running time is:", end - start
+
+
+for i in xrange(len(time_update_reg)):
+    pos_x_reg = np.append(pos_x_reg, state_update_reg[0,i])
+    pos_y_reg = np.append(pos_y_reg, state_update_reg[1,i])
+    pos_z_reg = np.append(pos_z_reg, state_update_reg[2,i])
+
+    v_1_reg = np.append(v_1_reg, state_update_reg[3, i])
+    v_2_reg = np.append(v_2_reg, state_update_reg[4, i])
+    v_3_reg = np.append(v_3_reg, state_update_reg[5, i])
+
+    R_1_reg = np.append(R_1_reg, state_update_reg[6, i])
+    R_2_reg = np.append(R_2_reg, state_update_reg[7, i])
+    R_3_reg = np.append(R_3_reg, state_update_reg[8, i])
+    R_4_reg = np.append(R_4_reg, state_update_reg[9, i])
+    R_5_reg = np.append(R_5_reg, state_update_reg[10, i])
+    R_6_reg = np.append(R_6_reg, state_update_reg[11, i])
+    R_7_reg = np.append(R_7_reg, state_update_reg[12, i])
+    R_8_reg = np.append(R_8_reg, state_update_reg[13, i])
+    R_9_reg = np.append(R_9_reg, state_update_reg[14, i])
+
+    w_x_reg = np.append(w_x_reg, state_update_reg[15,i])
+    w_y_reg = np.append(w_y_reg, state_update_reg[16,i])
+    w_z_reg = np.append(w_z_reg, state_update_reg[17,i])
+
+    pos_d0_reg = np.append(pos_d0_reg, np.array([0.4 * time_update_reg[i], 0.4 * np.sin(np.pi * time_update_reg[i]), 0.6 * np.cos(np.pi * time_update_reg[i])])[0])
+    pos_d1_reg = np.append(pos_d1_reg, np.array([0.4 * time_update_reg[i], 0.4 * np.sin(np.pi * time_update_reg[i]), 0.6 * np.cos(np.pi * time_update_reg[i])])[1])
+    pos_d2_reg = np.append(pos_d2_reg, np.array([0.4 * time_update_reg[i], 0.4 * np.sin(np.pi * time_update_reg[i]), 0.6 * np.cos(np.pi * time_update_reg[i])])[2])
+    _,_,temp =drone_reg.controller(time_update_reg[i],state_update_reg[:,i])
+    w_d0_reg = np.append(w_d0_reg, temp[0])
+    w_d1_reg = np.append(w_d1_reg, temp[1])
+    w_d2_reg = np.append(w_d2_reg, temp[2])
+
+# print "dimensions: ",t_list.shape,pos_x.shape,pos_d0.shape, w_d0.shape
+
+
+""" the plots zone """
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+plot_method  = raw_input("Which kind of plot do you want to see, 2 or 3(D)?")
+
+if plot_method == '3':
+    mpl.rcParams['legend.fontsize'] = 11
+    fig = plt.figure()
+    ax1 = fig.add_subplot(121, projection='3d')
+    ax1.plot(pos_d0_reg,pos_d1_reg,pos_d2_reg,label='desired trajectory')
+    ax1.plot(pos_x_reg,pos_y_reg,pos_z_reg,label='drone_c position')
+    ax1.legend()
+
+    ax2 = fig.add_subplot(122, projection='3d')
+    ax2.plot(w_d0_reg,w_d1_reg,w_d2_reg,label='desired angular velocity')
+    ax2.plot(w_x_reg,w_y_reg,w_z_reg,label='drone_c angular velocity')
+    ax2.legend()
+elif plot_method == '2':
+    ax1 = plt.subplot(2, 3, 1)
+    ax1.plot(time_update_reg, pos_x_reg, label='pos_x')
+    ax1.plot(time_update_reg, pos_d0_reg, label='pos_d0')
+    ax1.legend()
+
+    ax2 = plt.subplot(2, 3, 2)
+    ax2.plot(time_update_reg, pos_y_reg, label='pos_y')
+    ax2.plot(time_update_reg, pos_d1_reg, label='pos_d1')
+    ax2.legend()
+
+    ax3 = plt.subplot(2, 3, 3)
+    ax3.plot(time_update_reg, pos_z_reg, label='pos_z')
+    ax3.plot(time_update_reg, pos_d2_reg, label='pos_d2')
+    ax3.legend()
+
+    ax4 = plt.subplot(2, 3, 4)
+    ax4.plot(time_update_reg, w_x_reg, label='w_x')
+    ax4.plot(time_update_reg, w_d0_reg, label='w_d0')
+    ax4.legend()
+
+    ax5 = plt.subplot(2, 3, 5)
+    ax5.plot(time_update_reg, w_y_reg, label='w_y')
+    ax5.plot(time_update_reg, w_d1_reg, label='w_d1')
+    ax5.legend()
+
+    ax6 = plt.subplot(2, 3, 6)
+    ax6.plot(time_update_reg, w_z_reg, label='w_z')
+    ax6.plot(time_update_reg, w_d2_reg, label='w_d2')
+    ax6.legend()
+else:
+    print "plot method has to be 3 or 2!"
+
+plt.show()
