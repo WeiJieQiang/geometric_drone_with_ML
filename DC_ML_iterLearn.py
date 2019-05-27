@@ -15,6 +15,10 @@ from drone_tracking import *
 from numpy.linalg import norm as no
 import GPy
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 t_start = 0
 t_stop = 20
 t_step = 0.05
@@ -23,6 +27,9 @@ t_list = np.linspace(t_start, t_stop, el)
 
 
 drone_c = Drone(m_true=4.34,m_controller=3)
+
+time_update, state_update = drone_c.update(t_start,t_stop,t_step) # without specific sampling time points
+
 
 #position
 pos_x = np.array([])
@@ -60,13 +67,6 @@ w_d0 = np.array([])
 w_d1 = np.array([])
 w_d2 = np.array([])
 
-start = time.time()
-
-time_update, state_update = drone_c.update(t_start,t_stop,t_step) # without specific sampling time points
-
-end = time.time()
-print "The running time is:", end - start
-
 
 for i in xrange(len(time_update)):
     pos_x = np.append(pos_x, state_update[0,i])
@@ -102,10 +102,6 @@ for i in xrange(len(time_update)):
 
 
 """ the plots zone """
-
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 plot_method  = raw_input("Which kind of plot do you want to see, 2 or 3(D)?")
 
@@ -159,7 +155,6 @@ else:
 """Data collection part"""
 
 """S1: total state with imperfect controller, stored in state_imperfect_ctrl"""
-
 state_imperfect_ctrl = np.zeros(shape = (18,len(time_update)))
 state_imperfect_ctrl[0] = pos_x
 state_imperfect_ctrl[1] = pos_y
@@ -184,7 +179,7 @@ state_imperfect_ctrl[17] = w_z
 A possible answer is that this perfect controller is runned in a simulation."""
 drone_i = Drone(m_true=4.34,m_controller=4.34)
 
-print state_imperfect_ctrl[:,1].shape
+#print state_imperfect_ctrl[:,1].shape
 
 state_dot_perfect_ctrl = np.zeros(shape = (18, len(time_update)))
 for i in xrange(18):
@@ -206,13 +201,13 @@ for j in xrange(len(time_update)):
 Y = state_dot_perfect_ctrl - state_dot_imperfect_ctrl
 
 """test if we have correct data collections"""
-print "test:", state_dot_imperfect_ctrl[:,50]-state_dot_perfect_ctrl[:,50]
-print "test:", Y.shape
+#print "test:", state_dot_imperfect_ctrl[:,50]-state_dot_perfect_ctrl[:,50]
+#print "test:", Y.shape
 
-print "########## Data info:############"
-print "We have %d samples" % Y.shape[1]
-print "The input dimension is %d" % (state_imperfect_ctrl.shape[0]+control_imperfect_ctrl.shape[0])
-print "The target dimension is %d" % Y.shape[0]
+#print "########## Data info:############"
+#print "We have %d samples" % Y.shape[1]
+#print "The input dimension is %d" % (state_imperfect_ctrl.shape[0]+control_imperfect_ctrl.shape[0])
+#print "The target dimension is %d" % Y.shape[0]
 
 """ML part: here we use some libraries to perform the regression task for the model uncertainty. GPy, scikit-learn, tensorflow+keras"""
 # The sample data X
@@ -237,9 +232,10 @@ else:
     k = GPy.kern.RBF(input_dim=22, variance=1., lengthscale=1.)
     m = GPy.models.GPRegression(X.transpose(),Y.transpose(), k)
     m.constrain_positive('')
-    m.optimize(messages=True,max_f_eval = 1000)
+    m.optimize('bfgs', messages=True, max_f_eval = 1000, max_iters=2e3)
     print('test')
     np.save('./model_save.npy', m.param_array)
+
 
 
 # fig = m.plot()
@@ -262,8 +258,10 @@ plt.plot(ti,temp)
 #plt.show()
 
 # iteratively run the drone with regression corrections
-n=2 # number of iteration of drone running
+n=5 # number of iteration of drone running
 for run_num in xrange(n):
+
+    start = time.time()
     """collect data and append it to X and Y"""
     drone_reg = Drone_reg(m_true=4.34, m_controller=3)
     time_update, state_update = drone_reg.update(t_start, t_stop, t_step)  # without specific sampling time points
@@ -361,7 +359,7 @@ for run_num in xrange(n):
     A possible answer is that this perfect controller is runned in a simulation."""
     drone_i = Drone(m_true=4.34, m_controller=4.34)
 
-    print state_imperfect_ctrl[:, 1].shape
+    #print state_imperfect_ctrl[:, 1].shape
 
     state_dot_perfect_ctrl = np.zeros(shape=(18, len(time_update)))
     for i in xrange(18):
@@ -386,12 +384,12 @@ for run_num in xrange(n):
 
     """test if we have correct data collections"""
     #print "test:", state_dot_imperfect_ctrl[:, 50] - state_dot_perfect_ctrl[:, 50]
-    print "test:", Y.shape
+    #print "test:", Y.shape
 
-    print "########## Data info:############"
-    print "We have %d samples" % Y.shape[1]
-    print "The input dimension is %d" % (state_imperfect_ctrl.shape[0] + control_imperfect_ctrl.shape[0])
-    print "The target dimension is %d" % Y.shape[0]
+    #print "########## Data info:############"
+    #print "We have %d samples" % Y.shape[1]
+    #print "The input dimension is %d" % (state_imperfect_ctrl.shape[0] + control_imperfect_ctrl.shape[0])
+    #print "The target dimension is %d" % Y.shape[0]
 
     """ML part: here we use some libraries to perform the regression task for the model uncertainty. GPy, scikit-learn, tensorflow+keras"""
 
@@ -409,11 +407,14 @@ for run_num in xrange(n):
     k = GPy.kern.RBF(input_dim=22, variance=1., lengthscale=1.)
     m = GPy.models.GPRegression(X.transpose(), Y.transpose(), k)
     m.constrain_positive('')
-    m.optimize(messages=True, max_f_eval=1000)
-    print('test')
+    m.optimize('bfgs', messages=True, max_f_eval = 1000, max_iters=2e1)
+    #print('test')
     np.save('./model_save.npy', m.param_array)
 
     print "The iteration %d is done." %run_num
+
+    end = time.time()
+    print "The running time is:", end - start
 
 
 # the final run of drone
