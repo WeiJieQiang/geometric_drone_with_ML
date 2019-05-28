@@ -31,32 +31,8 @@ drone_c = Drone(m_true=4.34,m_controller=3)
 time_update, state_update = drone_c.update(t_start,t_stop,t_step) # without specific sampling time points
 
 
-#position
-pos_x = np.array([])
-pos_y = np.array([])
-pos_z = np.array([])
-
-# velocity
-v_1 = np.array([])
-v_2 = np.array([])
-v_3 = np.array([])
-
-# attitude
-R_1 = np.array([])
-R_2 = np.array([])
-R_3 = np.array([])
-R_4 = np.array([])
-R_5 = np.array([])
-R_6 = np.array([])
-R_7 = np.array([])
-R_8 = np.array([])
-R_9 = np.array([])
-
-# angular velocity
-w_x = np.array([])
-w_y = np.array([])
-w_z = np.array([])
-
+#position, velocity, attitude, angular velocity
+[pos_x,pos_y,pos_z,v_1,v_2,v_3,R_1,R_2,R_3,R_4,R_5,R_6,R_7,R_8,R_9,w_x,w_y,w_z] = state_update
 
 
 pos_d0 = np.array([])
@@ -69,28 +45,6 @@ w_d2 = np.array([])
 
 
 for i in xrange(len(time_update)):
-    pos_x = np.append(pos_x, state_update[0,i])
-    pos_y = np.append(pos_y, state_update[1,i])
-    pos_z = np.append(pos_z, state_update[2,i])
-
-    v_1 = np.append(v_1, state_update[3, i])
-    v_2 = np.append(v_2, state_update[4, i])
-    v_3 = np.append(v_3, state_update[5, i])
-
-    R_1 = np.append(R_1, state_update[6, i])
-    R_2 = np.append(R_2, state_update[7, i])
-    R_3 = np.append(R_3, state_update[8, i])
-    R_4 = np.append(R_4, state_update[9, i])
-    R_5 = np.append(R_5, state_update[10, i])
-    R_6 = np.append(R_6, state_update[11, i])
-    R_7 = np.append(R_7, state_update[12, i])
-    R_8 = np.append(R_8, state_update[13, i])
-    R_9 = np.append(R_9, state_update[14, i])
-
-    w_x = np.append(w_x, state_update[15,i])
-    w_y = np.append(w_y, state_update[16,i])
-    w_z = np.append(w_z, state_update[17,i])
-
     pos_d0 = np.append(pos_d0, np.array([0.4 * time_update[i], 0.4 * np.sin(np.pi * time_update[i]), 0.6 * np.cos(np.pi * time_update[i])])[0])
     pos_d1 = np.append(pos_d1, np.array([0.4 * time_update[i], 0.4 * np.sin(np.pi * time_update[i]), 0.6 * np.cos(np.pi * time_update[i])])[1])
     pos_d2 = np.append(pos_d2, np.array([0.4 * time_update[i], 0.4 * np.sin(np.pi * time_update[i]), 0.6 * np.cos(np.pi * time_update[i])])[2])
@@ -151,29 +105,13 @@ else:
     print "plot method has to be 3 or 2!"
 
 #plt.show()
+plt.close()
 
 """Data collection part"""
 
 """S1: total state with imperfect controller, stored in state_imperfect_ctrl"""
-state_imperfect_ctrl = np.zeros(shape = (18,len(time_update)))
-state_imperfect_ctrl[0] = pos_x
-state_imperfect_ctrl[1] = pos_y
-state_imperfect_ctrl[2] = pos_z
-state_imperfect_ctrl[3] = v_1
-state_imperfect_ctrl[4] = v_2
-state_imperfect_ctrl[5] = v_3
-state_imperfect_ctrl[6] = R_1
-state_imperfect_ctrl[7] = R_2
-state_imperfect_ctrl[8] = R_3
-state_imperfect_ctrl[9] = R_4
-state_imperfect_ctrl[10] = R_5
-state_imperfect_ctrl[11] = R_6
-state_imperfect_ctrl[12] = R_7
-state_imperfect_ctrl[13] = R_8
-state_imperfect_ctrl[14] = R_9
-state_imperfect_ctrl[15] = w_x
-state_imperfect_ctrl[16] = w_y
-state_imperfect_ctrl[17] = w_z
+# state_imperfect_ctrl = np.zeros(shape = (18,len(time_update)))
+state_imperfect_ctrl = state_update
 
 """S2: state_dot with perfect controller, stored in state_dot_perfect_ctrl. Q: how to generate this in reality is a big question! 
 A possible answer is that this perfect controller is runned in a simulation."""
@@ -258,7 +196,7 @@ plt.plot(ti,temp)
 #plt.show()
 
 # iteratively run the drone with regression corrections
-n=5 # number of iteration of drone running
+n=3 # number of iteration of drone running
 for run_num in xrange(n):
 
     start = time.time()
@@ -266,94 +204,8 @@ for run_num in xrange(n):
     drone_reg = Drone_reg(m_true=4.34, m_controller=3)
     time_update, state_update = drone_reg.update(t_start, t_stop, t_step)  # without specific sampling time points
 
-    # position
-    pos_x = np.zeros(shape=(len(time_update),))
-    pos_y = np.zeros(shape=(len(time_update),))
-    pos_z = np.zeros(shape=(len(time_update),))
-
-    # velocity
-    v_1 = np.zeros(shape=(len(time_update),))
-    v_2 = np.zeros(shape=(len(time_update),))
-    v_3 = np.zeros(shape=(len(time_update),))
-
-    # attitude
-    R_1 = np.zeros(shape=(len(time_update),))
-    R_2 = np.zeros(shape=(len(time_update),))
-    R_3 = np.zeros(shape=(len(time_update),))
-    R_4 = np.zeros(shape=(len(time_update),))
-    R_5 = np.zeros(shape=(len(time_update),))
-    R_6 = np.zeros(shape=(len(time_update),))
-    R_7 = np.zeros(shape=(len(time_update),))
-    R_8 = np.zeros(shape=(len(time_update),))
-    R_9 = np.zeros(shape=(len(time_update),))
-
-    # angular velocity
-    w_x = np.zeros(shape=(len(time_update),))
-    w_y = np.zeros(shape=(len(time_update),))
-    w_z = np.zeros(shape=(len(time_update),))
-
-    pos_d0 = np.zeros(shape=(len(time_update),))
-    pos_d1 = np.zeros(shape=(len(time_update),))
-    pos_d2 = np.zeros(shape=(len(time_update),))
-
-    w_d0 = np.zeros(shape=(len(time_update),))
-    w_d1 = np.zeros(shape=(len(time_update),))
-    w_d2 = np.zeros(shape=(len(time_update),))
-
-    for i in xrange(len(time_update)):
-        pos_x[i] =  state_update[0, i]
-        pos_y[i] = state_update[1, i]
-        pos_z[i] = state_update[2, i]
-
-        v_1[i] = state_update[3, i]
-        v_2[i] = state_update[4, i]
-        v_3[i] = state_update[5, i]
-
-        R_1[i] = state_update[6, i]
-        R_2[i] = state_update[7, i]
-        R_3[i] = state_update[8, i]
-        R_4[i] = state_update[9, i]
-        R_5[i] = state_update[10, i]
-        R_6[i] = state_update[11, i]
-        R_7[i] = state_update[12, i]
-        R_8[i] = state_update[13, i]
-        R_9[i] = state_update[14, i]
-
-        w_x[i] = state_update[15, i]
-        w_y[i] = state_update[16, i]
-        w_z[i] = state_update[17, i]
-
-        pos_d0[i] = 0.4 * time_update[i]
-        pos_d1[i] = 0.4 * np.sin(np.pi * time_update[i])
-        pos_d2[i] = 0.6 * np.cos(np.pi * time_update[i])
-        _, _, temp = drone_c.controller(time_update[i], state_update[:, i])
-        w_d0[i] = temp[0]
-        w_d1[i] = temp[1]
-        w_d2[i] = temp[2]
-
-    # print "dimensions: ",t_list.shape,pos_x.shape,pos_d0.shape, w_d0.shape
-
     """S1: total state with imperfect controller, stored in state_imperfect_ctrl"""
-
-    state_imperfect_ctrl = np.zeros(shape=(18, len(time_update)))
-    state_imperfect_ctrl[0] = pos_x
-    state_imperfect_ctrl[1] = pos_y
-    state_imperfect_ctrl[2] = pos_z
-    state_imperfect_ctrl[3] = v_1
-    state_imperfect_ctrl[4] = v_2
-    state_imperfect_ctrl[5] = v_3
-    state_imperfect_ctrl[6] = R_1
-    state_imperfect_ctrl[7] = R_2
-    state_imperfect_ctrl[8] = R_3
-    state_imperfect_ctrl[9] = R_4
-    state_imperfect_ctrl[10] = R_5
-    state_imperfect_ctrl[11] = R_6
-    state_imperfect_ctrl[12] = R_7
-    state_imperfect_ctrl[13] = R_8
-    state_imperfect_ctrl[14] = R_9
-    state_imperfect_ctrl[15] = w_x
-    state_imperfect_ctrl[16] = w_y
-    state_imperfect_ctrl[17] = w_z
+    state_imperfect_ctrl = state_update
 
     """S2: state_dot with perfect controller, stored in state_dot_perfect_ctrl. Q: how to generate this in reality is a big question! 
     A possible answer is that this perfect controller is runned in a simulation."""
@@ -382,15 +234,6 @@ for run_num in xrange(n):
     """S4: target variable, stored in Y"""
     Y = np.append(Y, state_dot_perfect_ctrl - state_dot_imperfect_ctrl, axis=1)
 
-    """test if we have correct data collections"""
-    #print "test:", state_dot_imperfect_ctrl[:, 50] - state_dot_perfect_ctrl[:, 50]
-    #print "test:", Y.shape
-
-    #print "########## Data info:############"
-    #print "We have %d samples" % Y.shape[1]
-    #print "The input dimension is %d" % (state_imperfect_ctrl.shape[0] + control_imperfect_ctrl.shape[0])
-    #print "The target dimension is %d" % Y.shape[0]
-
     """ML part: here we use some libraries to perform the regression task for the model uncertainty. GPy, scikit-learn, tensorflow+keras"""
 
 
@@ -401,54 +244,26 @@ for run_num in xrange(n):
 
     X = np.append(X,X_temp, axis=1)
 
+
     np.save('./X.npy', X)
     np.save('./Y.npy', Y)
 
+
+
     k = GPy.kern.RBF(input_dim=22, variance=1., lengthscale=1.)
-    m = GPy.models.GPRegression(X.transpose(), Y.transpose(), k)
+    m = GPy.models.GPRegression(X.transpose(), Y.transpose(), k)#Q: when use Sparse, then the load needs to be changed.
     m.constrain_positive('')
     m.optimize('bfgs', messages=True, max_f_eval = 1000, max_iters=2e1)
-    #print('test')
     np.save('./model_save.npy', m.param_array)
 
     print "The iteration %d is done." %run_num
-
     end = time.time()
     print "The running time is:", end - start
-
 
 # the final run of drone
 drone_reg = Drone_reg(m_true=4.34,m_controller=3)
 
 # plot the corrected trajectory using regression model
-#position
-pos_x_reg = np.array([])
-pos_y_reg = np.array([])
-pos_z_reg = np.array([])
-
-# velocity
-v_1_reg = np.array([])
-v_2_reg = np.array([])
-v_3_reg = np.array([])
-
-# attitude
-R_1_reg = np.array([])
-R_2_reg = np.array([])
-R_3_reg = np.array([])
-R_4_reg = np.array([])
-R_5_reg = np.array([])
-R_6_reg = np.array([])
-R_7_reg = np.array([])
-R_8_reg = np.array([])
-R_9_reg = np.array([])
-
-# angular velocity
-w_x_reg = np.array([])
-w_y_reg = np.array([])
-w_z_reg = np.array([])
-
-
-
 pos_d0_reg = np.array([])
 pos_d1_reg = np.array([])
 pos_d2_reg = np.array([])
@@ -464,30 +279,10 @@ time_update_reg, state_update_reg = drone_reg.update(t_start,t_stop,t_step) # wi
 end = time.time()
 print "The running time is:", end - start
 
+[pos_x_reg,pos_y_reg,pos_z_reg,v_1_reg,v_2_reg,v_3_reg,R_1_reg,R_2_reg,
+ R_3_reg,R_4_reg,R_5_reg,R_6_reg,R_7_reg,R_8_reg,R_9_reg,w_x_reg,w_y_reg,w_z_reg] = state_update_reg
 
 for i in xrange(len(time_update_reg)):
-    pos_x_reg = np.append(pos_x_reg, state_update_reg[0,i])
-    pos_y_reg = np.append(pos_y_reg, state_update_reg[1,i])
-    pos_z_reg = np.append(pos_z_reg, state_update_reg[2,i])
-
-    v_1_reg = np.append(v_1_reg, state_update_reg[3, i])
-    v_2_reg = np.append(v_2_reg, state_update_reg[4, i])
-    v_3_reg = np.append(v_3_reg, state_update_reg[5, i])
-
-    R_1_reg = np.append(R_1_reg, state_update_reg[6, i])
-    R_2_reg = np.append(R_2_reg, state_update_reg[7, i])
-    R_3_reg = np.append(R_3_reg, state_update_reg[8, i])
-    R_4_reg = np.append(R_4_reg, state_update_reg[9, i])
-    R_5_reg = np.append(R_5_reg, state_update_reg[10, i])
-    R_6_reg = np.append(R_6_reg, state_update_reg[11, i])
-    R_7_reg = np.append(R_7_reg, state_update_reg[12, i])
-    R_8_reg = np.append(R_8_reg, state_update_reg[13, i])
-    R_9_reg = np.append(R_9_reg, state_update_reg[14, i])
-
-    w_x_reg = np.append(w_x_reg, state_update_reg[15,i])
-    w_y_reg = np.append(w_y_reg, state_update_reg[16,i])
-    w_z_reg = np.append(w_z_reg, state_update_reg[17,i])
-
     pos_d0_reg = np.append(pos_d0_reg, np.array([0.4 * time_update_reg[i], 0.4 * np.sin(np.pi * time_update_reg[i]), 0.6 * np.cos(np.pi * time_update_reg[i])])[0])
     pos_d1_reg = np.append(pos_d1_reg, np.array([0.4 * time_update_reg[i], 0.4 * np.sin(np.pi * time_update_reg[i]), 0.6 * np.cos(np.pi * time_update_reg[i])])[1])
     pos_d2_reg = np.append(pos_d2_reg, np.array([0.4 * time_update_reg[i], 0.4 * np.sin(np.pi * time_update_reg[i]), 0.6 * np.cos(np.pi * time_update_reg[i])])[2])
