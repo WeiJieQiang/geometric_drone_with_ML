@@ -104,20 +104,18 @@ elif plot_method == '2':
 else:
     print "plot method has to be 3 or 2!"
 
-#plt.show()
-plt.close()
+plt.show()
+
 
 """Data collection part"""
 
 """S1: total state with imperfect controller, stored in state_imperfect_ctrl"""
-# state_imperfect_ctrl = np.zeros(shape = (18,len(time_update)))
 state_imperfect_ctrl = state_update
 
 """S2: state_dot with perfect controller, stored in state_dot_perfect_ctrl. Q: how to generate this in reality is a big question! 
 A possible answer is that this perfect controller is runned in a simulation."""
-drone_i = Drone(m_true=4.34,m_controller=4.34)
-
-#print state_imperfect_ctrl[:,1].shape
+#drone_i = Drone(m_true=4.34,m_controller=4.34)
+drone_i = Drone(m_true=3,m_controller=3)
 
 state_dot_perfect_ctrl = np.zeros(shape = (18, len(time_update)))
 for i in xrange(18):
@@ -171,7 +169,6 @@ else:
     m = GPy.models.GPRegression(X.transpose(),Y.transpose(), k)
     m.constrain_positive('')
     m.optimize('bfgs', messages=True, max_f_eval = 1000, max_iters=2e3)
-    print('test')
     np.save('./model_save.npy', m.param_array)
 
 
@@ -181,22 +178,22 @@ else:
 # display(m)
 
 # validation on GPy
-print"EEE2"
-print X.shape
-print X[:,0].shape
-dim = 200
-print m.predict(X[:,dim].reshape(1,22))[0]-Y[:,dim]
-
-temp =np.zeros(len(Y[1]))
-for i in xrange(len(Y[1])):
-    temp[i] = no(m.predict(X[:,i].reshape(1,22))[0]-Y[:,i])
-
-ti = range(400)
-plt.plot(ti,temp)
-#plt.show()
+# print"EEE2"
+# print X.shape
+# print X[:,0].shape
+# dim = 200
+# print m.predict(X[:,dim].reshape(1,22))[0]-Y[:,dim]
+#
+# temp =np.zeros(len(Y[1]))
+# for i in xrange(len(Y[1])):
+#     temp[i] = no(m.predict(X[:,i].reshape(1,22))[0]-Y[:,i])
+#
+# ti = range(400)
+# plt.plot(ti,temp)
+# #plt.show()
 
 # iteratively run the drone with regression corrections
-n=3 # number of iteration of drone running
+n=2 # number of iteration of drone running
 for run_num in xrange(n):
 
     start = time.time()
@@ -209,7 +206,8 @@ for run_num in xrange(n):
 
     """S2: state_dot with perfect controller, stored in state_dot_perfect_ctrl. Q: how to generate this in reality is a big question! 
     A possible answer is that this perfect controller is runned in a simulation."""
-    drone_i = Drone(m_true=4.34, m_controller=4.34)
+    #drone_i = Drone(m_true=4.34, m_controller=4.34)
+    drone_i = Drone(m_true=3, m_controller=3)
 
     #print state_imperfect_ctrl[:, 1].shape
 
@@ -260,7 +258,7 @@ for run_num in xrange(n):
     end = time.time()
     print "The running time is:", end - start
 
-# the final run of drone
+"""the final run of drone"""
 drone_reg = Drone_reg(m_true=4.34,m_controller=3)
 
 # plot the corrected trajectory using regression model
